@@ -1,4 +1,4 @@
-# sai: portfolio
+# Sai: portfolio
 
 A dark, quiet portfolio built around four things I love: racing, games, forests and anime.
 
