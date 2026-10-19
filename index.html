@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sai: code, circuits and the forest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Newsreader:ital,wght@1,400&family=Shippori+Mincho:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0b110e; --bg2:#121c16; --mist:#d6ddd1; --dim:#8c9b8d; --moss:#6f9468; --glow:#c6e5a0; --red:#dc0000; --gold:#ffd400; --bone:#f1efe8;
+  --kanji:"Shippori Mincho","Yu Mincho","Hiragino Mincho ProN",serif;
+  --head:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --whisper:"Newsreader",Georgia,"Times New Roman",serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--mist);font-family:var(--head);font-size:1.05rem;line-height:1.65;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:4px}
+
+/* fog + headlight */
+.beam{position:fixed;inset:0;pointer-events:none;z-index:20;
+  background:radial-gradient(circle 300px at var(--x,50%) var(--y,35%),transparent 0,rgba(5,8,6,.55) 100%)}
+@media (hover:none){.beam{background:radial-gradient(ellipse at 50% 30%,transparent 30%,rgba(5,8,6,.45) 100%)}}
+.fly{position:fixed;width:3px;height:3px;border-radius:50%;background:var(--glow);box-shadow:0 0 8px 2px rgba(198,229,160,.55);opacity:0;z-index:5;pointer-events:none;animation:drift var(--d) ease-in-out var(--delay) infinite}
+@keyframes drift{0%,100%{opacity:0;transform:translate(0,0)}30%{opacity:.8}60%{opacity:.25;transform:translate(var(--dx),var(--dy))}}
+
+/* hud */
+.hud{position:fixed;top:0;left:0;right:0;z-index:25;display:flex;justify-content:space-between;align-items:center;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) clamp(18px,4vw,40px) 14px;font-size:.85rem;color:var(--dim);
+  background:linear-gradient(var(--bg),rgba(11,17,14,0))}
+.hud b{color:var(--mist);font-weight:600;letter-spacing:.04em}
+.lap{position:fixed;top:env(safe-area-inset-top,0px);left:0;height:2px;width:100%;background:var(--gold);transform-origin:left;transform:scaleX(0);z-index:31}
+
+main{position:relative;z-index:10;max-width:940px;margin:0 auto;padding:0 clamp(20px,5vw,48px)}
+
+/* hero */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;position:relative}
+.lights{display:flex;gap:clamp(10px,2vw,18px);margin-bottom:clamp(28px,6vh,56px)}
+.lights i{width:clamp(22px,4.2vw,34px);aspect-ratio:1;border-radius:50%;background:#1a2420;border:1px solid #2a3832;transition:background .15s,box-shadow .15s}
+.lights i.on{background:var(--red);border-color:var(--red);box-shadow:0 0 18px 4px rgba(220,0,0,.55)}
+.name{margin:0;font-size:clamp(5rem,22vw,13rem);line-height:.9;font-weight:700;letter-spacing:-.04em;opacity:0;filter:blur(14px);transition:opacity 1.6s ease,filter 1.6s ease}
+.whisper{margin:1.4rem 0 0;font-family:var(--whisper);font-style:italic;font-size:clamp(1.15rem,2.6vw,1.6rem);color:var(--dim);max-width:30ch;opacity:0;transition:opacity 1.6s ease .9s}
+.go .name{opacity:1;filter:blur(0)}
+.go .whisper{opacity:1}
+.track{position:absolute;right:-6%;top:50%;width:min(62vw,560px);transform:translateY(-45%);opacity:.5;pointer-events:none}
+.track path{fill:none;stroke:var(--moss);stroke-width:2;stroke-dasharray:2400;stroke-dashoffset:2400}
+.go .track path{animation:draw 4s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.car{fill:var(--red);filter:drop-shadow(0 0 5px var(--red));opacity:0}
+.go .car{opacity:1;transition:opacity 1s 3s}
+
+/* the cut: one slash when the lights go out */
+.cut{position:absolute;left:-12%;top:38%;width:130%;height:2px;background:linear-gradient(90deg,transparent,var(--bone) 35%,#fff 55%,transparent);transform:rotate(-13deg) scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
+.go .cut{animation:cut 1s cubic-bezier(.2,.8,.2,1) .05s forwards}
+@keyframes cut{0%{transform:rotate(-13deg) scaleX(0);opacity:1}55%{transform:rotate(-13deg) scaleX(1);opacity:1}100%{transform:rotate(-13deg) scaleX(1);opacity:0}}
+body::after{content:"";position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:40}
+.go::after{animation:flash .6s ease-out}
+@keyframes flash{0%{opacity:.14}100%{opacity:0}}
+.go .name{animation:aura 6s ease-in-out 1.8s infinite}
+@keyframes aura{0%,100%{text-shadow:0 0 30px rgba(241,239,232,.08)}50%{text-shadow:0 0 56px rgba(241,239,232,.3)}}
+.kanji{position:absolute;right:0;top:14vh;writing-mode:vertical-rl;font-family:var(--kanji);font-weight:700;font-size:clamp(1.6rem,4vw,2.6rem);letter-spacing:.3em;color:var(--bone);opacity:0;transition:opacity 2s ease 1.6s;pointer-events:none}
+.go .kanji{opacity:.35}
+h2::after{content:"";display:block;width:64px;height:2px;margin-top:14px;background:linear-gradient(90deg,var(--bone),transparent);transform:skewX(-35deg);transform-origin:left}
+
+/* sections */
+section{padding:clamp(72px,14vh,140px) 0 0}
+h2{margin:0 0 1.6rem;font-size:clamp(1.6rem,4vw,2.3rem);font-weight:600;letter-spacing:-.01em}
+.about p{max-width:52ch;margin:0 0 1.1rem;color:var(--mist)}
+.about p.q{font-family:var(--whisper);font-style:italic;color:var(--dim);font-size:1.2rem}
+
+.rows{list-style:none;margin:0;padding:0;border-top:1px solid #22302a}
+.rows a{display:grid;grid-template-columns:1fr auto;gap:4px 24px;padding:22px 0 22px 18px;border-bottom:1px solid #22302a;text-decoration:none;position:relative;transition:padding .25s,background .25s}
+.rows a::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);transform:scaleY(0);transition:transform .25s}
+.rows a:hover,.rows a:focus-visible{padding-left:30px;background:var(--bg2)}
+.rows a:hover::before,.rows a:focus-visible::before{transform:scaleY(1)}
+.rows strong{font-size:1.25rem;font-weight:600;overflow-wrap:anywhere}
+.rows span.lang{color:var(--moss);font-size:.9rem;align-self:center}
+.rows em{grid-column:1/-1;font-style:normal;color:var(--dim);font-size:.98rem;max-width:56ch}
+
+.feature{display:block;position:relative;padding:clamp(26px,5vw,44px);margin-bottom:28px;border:1px solid var(--moss);text-decoration:none;background:linear-gradient(135deg,var(--bg2),var(--bg));transition:border-color .25s,transform .25s}
+.feature:hover,.feature:focus-visible{border-color:var(--red);transform:translateY(-3px)}
+.feature .tag{display:block;color:var(--gold);font-size:.85rem;margin-bottom:14px}
+.feature strong{display:block;font-size:clamp(1.7rem,5vw,3rem);line-height:1.1;font-weight:700;letter-spacing:-.02em;overflow-wrap:anywhere}
+.feature em{display:block;margin:14px 0 18px;font-family:var(--whisper);font-size:1.25rem;color:var(--dim);max-width:40ch}
+.feature .lang{color:var(--moss);font-size:.9rem}
+.links{display:flex;flex-wrap:wrap;gap:14px}
+.links a{padding:12px 22px;border:1px solid var(--moss);text-decoration:none;font-weight:600;transition:background .2s,border-color .2s,color .2s}
+.links a:hover{background:var(--red);border-color:var(--red);color:#fff}
+footer{padding:96px 0 48px;color:var(--dim);font-size:.85rem}
+
+@media (max-width:640px){.track{opacity:.28;width:90vw;right:-25%}}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .name,.whisper{opacity:1;filter:none;transition:none}
+  .track path{stroke-dashoffset:0;animation:none!important}
+  .car,.fly,.cut{display:none}
+  body::after{display:none}
+  .go .name{animation:none}
+  .kanji{opacity:.35;transition:none}
+}
+</style>
+</head>
+<body>
+<div class="lap" id="lap"></div>
+<div class="beam" id="beam"></div>
+<header class="hud"><b>sai</b><span id="sector">on the grid</span></header>
+
+<main>
+  <div class="hero" id="start">
+    <i class="cut" aria-hidden="true"></i>
+    <span class="kanji" aria-hidden="true">霊圧</span>
+    <svg class="track" viewBox="0 0 800 500" aria-hidden="true">
+      <path id="circuit" d="M120 380 C60 300 120 160 260 150 S420 230 520 140 S740 90 720 240 S600 330 640 420 S380 450 300 380 S180 450 120 380Z"/>
+      <circle class="car" r="5"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#circuit"/></animateMotion></circle>
+    </svg>
+    <div class="lights" id="lights" role="img" aria-label="Five start lights"><i></i><i></i><i></i><i></i><i></i></div>
+    <h1 class="name">sai</h1>
+    <p class="whisper">Something is moving in the trees, and it is moving fast.</p>
+  </div>
+
+  
+  <section id="work" data-sector="sector 1: the trail">
+    <h2>Projects</h2>
+    <a class="feature" href="https://github.com/SAI-glit/Deforestation-Risk-Detector">
+      <span class="tag">featured</span>
+      <strong>Deforestation-Risk-Detector</strong>
+      <em>Reads the forest from above and flags where the trees are most at risk.</em>
+      <span class="lang">Python</span>
+    </a>
+    <ul class="rows">
+      <li><a href="https://github.com/SAI-glit/Pothole-Detection"><strong>Pothole-Detection</strong><span class="lang">Python</span><em>Spots road damage before the next lap does.</em></a></li>
+      <li><a href="https://github.com/SAI-glit/Maze-Solver"><strong>Maze-Solver</strong><span class="lang">JavaScript</span><em>Finds the racing line through a maze, corner by corner.</em></a></li>
+      <li><a href="https://github.com/SAI-glit/Smart-Parking-Lot-Management-System"><strong>Smart-Parking-Lot-Management-System</strong><span class="lang">CSS</span><em>Keeps a parking lot in order: where there’s space, and where there isn’t.</em></a></li>
+      <li><a href="https://github.com/SAI-glit/speech-to-text"><strong>speech-to-text</strong><span class="lang">Python</span><em>A simple Python program that turns spoken words into text.</em></a></li>
+    </ul>
+  </section>
+
+  <section class="about" id="about" data-sector="sector 2: the paddock">
+    <h2>About</h2>
+    <p>I write code that watches, listens and finds its way: programs that read forests from above, spot damage on the road and turn speech into text.</p>
+    <p>Away from the keyboard I’m usually on a race weekend, rooting for Ferrari, or deep in a game, learning how fast things go when everything is dialled in.</p>
+    <p class="q">Worlds and stories I keep going back to: Bleach, Elden Ring, Hollow Knight, Forza Horizon, Death Stranding.</p>
+  </section>
+
+  <section id="contact" data-sector="sector 3: the finish">
+    <h2>Find me</h2>
+    <div class="links">
+      <a href="https://github.com/SAI-glit">GitHub</a>
+      <a href="https://www.linkedin.com/in/sai-b-925a69337">LinkedIn</a>
+    </div>
+  </section>
+
+  <footer>© 2026 Sai. Built under the trees. Forza.</footer>
+</main>
+
+<script>
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var body=document.body, bulbs=document.querySelectorAll('#lights i');
+
+  // lights out sequence
+  if(reduce){body.classList.add('go');bulbs.forEach(function(b){b.classList.add('on')});}
+  else{
+    bulbs.forEach(function(b,i){setTimeout(function(){b.classList.add('on')},500+i*420)});
+    setTimeout(function(){bulbs.forEach(function(b){b.classList.remove('on')});body.classList.add('go')},500+5*420+900);
+  }
+
+  // headlight follows pointer
+  var beam=document.getElementById('beam');
+  window.addEventListener('pointermove',function(e){
+    beam.style.setProperty('--x',e.clientX+'px');beam.style.setProperty('--y',e.clientY+'px');
+  },{passive:true});
+
+  // fireflies
+  if(!reduce){
+    for(var i=0;i<16;i++){
+      var f=document.createElement('div');f.className='fly';
+      f.style.left=(Math.random()*100)+'vw';f.style.top=(Math.random()*100)+'vh';
+      f.style.setProperty('--d',(7+Math.random()*8)+'s');
+      f.style.setProperty('--delay',(Math.random()*8)+'s');
+      f.style.setProperty('--dx',(Math.random()*80-40)+'px');
+      f.style.setProperty('--dy',(Math.random()*80-40)+'px');
+      body.appendChild(f);
+    }
+  }
+
+  // lap progress + sector label
+  var lap=document.getElementById('lap'), label=document.getElementById('sector');
+  var secs=[].slice.call(document.querySelectorAll('[data-sector]'));
+  function onScroll(){
+    var max=document.documentElement.scrollHeight-window.innerHeight;
+    lap.style.transform='scaleX('+(max>0?Math.min(1,window.scrollY/max):0)+')';
+    var cur='on the grid', mid=window.innerHeight*0.5;
+    secs.forEach(function(s){if(s.getBoundingClientRect().top<mid)cur=s.getAttribute('data-sector')});
+    label.textContent=cur;
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+</body>
+</html>
